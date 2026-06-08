@@ -1,0 +1,6 @@
+# never track secrets
+*.key
+*.pem
+auth.json
+.env
+*.lock

@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "== Mirai Homeostasis $(date -u '+%Y-%m-%d %H:%M:%S UTC') =="
+echo ""
+
+if command -v sensors >/dev/null 2>&1; then
+    echo "[temps]"
+    sensors || true
+    echo ""
+else
+    echo "[temps] sensors not available"
+    echo ""
+fi
+
+echo "[cpu-mem]"
+if command -v vmstat >/dev/null 2>&1; then
+    vmstat 1 3 | tail -3
+else
+    echo "vmstat not available"
+fi
+echo ""
+
+echo "[memory]"
+if command -v free >/dev/null 2>&1; then
+    free -h
+else
+    cat /proc/meminfo | sed -n '1,15p'
+fi
+echo ""
+
+echo "[swap]"
+swapon --show || true
+echo ""
+
+echo "[disk]"
+df -hT / /home 2>/dev/null || true
+echo ""
+
+echo "[load]"
+cat /proc/loadavg
+echo ""
+
+echo "[processes]"
+ps -eo pid,ppid,user,%cpu,%mem,stat,cmd --sort=-%cpu | head -12
+echo ""
+
+echo "[temperature sensors]"
+for f in /sys/class/thermal/thermal_zone*/temp /sys/class/hwmon/hwmon*/temp*_input; do
+    [ -f "$f" ] || continue
+    val=$(cat "$f" 2>/dev/null || echo 0)
+    c=${val%???}   # millidegrees -> degrees (rough)
+    echo "  $f -> $c C (raw $val)"
+done
+echo ""
+
+echo "[thermal zones]"
+cat /sys/class/thermal/thermal_zone*/type 2>/dev/null | sed 's#^#  #' || true
+echo ""
+
+echo "== done =="
