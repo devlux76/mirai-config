@@ -7,10 +7,13 @@
   // Plan mode is read-only by design — use it for exploration and planning,
   // then switch to build mode for actual code changes.
 
-  // Default free model — mimo-v2.5 is strongest for multi-file C++ agentic coding.
-  // Fallbacks in order: big-pickle (fast/general), deepseek-v4-flash-free (known model).
-  // For paid work: switch to qwen3-coder-next:cloud via --model flag.
-  "model": "opencode/mimo-v2.5-free",
+  // Default model — ollama-cloud/minimax-m3 (the user's standing preference).
+  // To switch per-session, use `opencode run --model <provider>/<id>` or the
+  // TUI's `/model` command. Other handy options:
+  //   opencode/big-pickle             — fast/free opencode-hosted alternative
+  //   ollama-cloud/gemma4:31b         — wallet-friendly 31B
+  //   opencode/minimax-m3-free        — free mini-max hosted variant
+  "model": "ollama-cloud/minimax-m3",
 
   // Enable LSP servers for code intelligence
   "lsp": {
