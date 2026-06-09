@@ -1,0 +1,54 @@
+[Unit]
+Description=opencode headless server (AI coding assistant + mechanic for Mirai)
+Documentation=https://opencode.ai/docs/server
+# Start after the network is up so the bind succeeds; allow lingering logind
+# session so the user-mode service can keep running before any login.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mirai
+Group=mirai
+
+# The binary lives in mirai's home. If/when a dedicated `opencode` system
+# user is created (parallel to how mirai was separated from the human
+# account), update these two lines and the state dirs in the Environment
+# block below.
+ExecStart=/home/mirai/.local/bin/opencode serve --port 4096 --hostname 127.0.0.1
+
+# Run forever; if it dies, restart it. Throttle to avoid thrashing.
+Restart=always
+RestartSec=3
+
+# Environment: XDG defaults are correct (mirai's home is /home/mirai), but be
+# explicit so anyone reading the unit knows where state lives. State and
+# session data end up in:
+#   /home/mirai/.local/share/opencode/  (databases, snapshot/)
+#   /home/mirai/.local/state/opencode/  (server.json, password)
+Environment=XDG_STATE_HOME=/home/mirai/.local/state
+Environment=XDG_DATA_HOME=/home/mirai/.local/share
+Environment=XDG_CACHE_HOME=/home/mirai/.local/cache
+Environment=XDG_CONFIG_HOME=/home/mirai/.config
+# Full PATH so the mechanic (opencode) can reach every tool mirai can reach,
+# including hermes, pkexec, sudo, package managers, drivers, etc.
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/home/mirai/.local/bin:/home/mirai/.local/share/coursier/bin:/home/mirai/.cargo/bin:/home/mirai/.dotnet/tools
+
+# Logs to a dedicated file under /var/log/opencode/ (rotated by logrotate).
+# Stdout/stderr of the process itself still goes to the journal for `journalctl
+# -u opencode`.
+StandardOutput=append:/var/log/opencode/serve.log
+StandardError=append:/var/log/opencode/serve.log
+
+# Resource limits — be a good citizen, but no hard caps that would block the
+# mechanic from doing real work (driver installs, large model downloads, etc.)
+LimitNOFILE=65536
+LimitNPROC=65536
+
+# Watchdog: if opencode ever supports sd_notify, the watchdog can be enabled
+# by uncommenting the next two lines and the equivalent in opencode itself.
+# WatchdogSec=30s
+# NotifyAccess=main
+
+[Install]
+WantedBy=multi-user.target
